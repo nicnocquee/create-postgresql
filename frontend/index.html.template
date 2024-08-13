@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Database Creation</title>
+    <script src="https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}"></script>
+</head>
+<body>
+    <h1>Verify Database Creation</h1>
+    <button id="verifyButton">Verify and Create Database</button>
+
+    <script>
+        document.getElementById('verifyButton').addEventListener('click', async (e) => {
+            e.preventDefault();
+            grecaptcha.ready(function() {
+                grecaptcha.execute('${RECAPTCHA_SITE_KEY}', {action: 'verify'}).then(async function(token) {
+                    const sessionId = new URLSearchParams(window.location.search).get('session');
+                    try {
+                        const response = await fetch('${API_URL}/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ recaptchaToken: token, session: sessionId })
+                        });
+
+                        if (response.ok) {
+                            document.body.innerHTML = '<h1>Verified! You can now close this page and return to the CLI.</h1>';
+                        } else {
+                            const errorData = await response.json();
+                            alert(`Verification failed. ${errorData.error || 'Please try again.'}`);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please check the console and try again.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

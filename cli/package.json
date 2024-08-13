@@ -1,0 +1,35 @@
+{
+  "name": "create-postgresql",
+  "version": "1.0.2",
+  "description": "A command-line interface (CLI) tool to quickly create a temporary PostgreSQL database for development purposes.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicnocquee/create-postgres.git"
+  },
+  "author": {
+    "name": "Nico Prananta",
+    "url": "https://nico.fyi"
+  },
+  "license": "MIT",
+  "main": "index.prod.js",
+  "bin": {
+    "create-postgresql": "./index.prod.js"
+  },
+  "files": [
+    "index.prod.js"
+  ],
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.prod.js",
+    "prepublish": "npm run build",
+    "build": "node ./build-script.js",
+    "version-bump": "node version-bump.js",
+    "publish-cli": "npm run version-bump && npm publish && git reset --hard HEAD"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^16.4.5",
+    "open": "^8.2.1",
+    "yargs": "^17.7.2"
+  }
+}
