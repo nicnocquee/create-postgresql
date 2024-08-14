@@ -6,3 +6,4 @@ pgdata
 cli/index.prod.js
 cron/logs
 .npmrc
+docker-compose.override.yml 

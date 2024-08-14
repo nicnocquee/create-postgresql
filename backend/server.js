@@ -11,10 +11,12 @@ const createDbLimiter = rateLimit({
 });
 
 const app = express();
-// Enable CORS for all routes
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost',
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -39,7 +41,7 @@ app.post('/verify', async (req, res) => {
   try {
     const recaptchaVerification = await axios.post(verificationURL, null, {
       params: {
-        secret: process.env.RECAPTCHA_SECRET_KEY,
+        secret: process.env.BACKEND_RECAPTCHA_SECRET_KEY,
         response: recaptchaToken,
       },
     });
@@ -93,6 +95,10 @@ app.get('/database-size', async (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
+});
+
+app.get('/health2', (req, res) => {
+  res.status(200).send('OK 2');
 });
 
 const PORT = process.env.PORT || 3000;

@@ -1,6 +1,6 @@
 # create-postgresql (WIP)
 
-create-postgresql is a service that provides temporary PostgreSQL databases for developers. It offers a CLI tool for easy database creation and a daily reset mechanism to ensure fresh environments.
+This repo contains the server part of [create-postgresql CLI](https://www.npmjs.com/package/create-postgresql). By default, the published version of the CLI uses the deployed version of this service. You can self host the backend services in this repo and use it with the CLI.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ The system consists of several components:
 - Backend server (Node.js/Express)
 - Frontend verification page
 - Cron job for database cleanup
-- CLI tool for user interaction
+- [CLI tool to quickly generate a temporary database](https://www.npmjs.com/package/create-postgresql)
 
 ## Prerequisites
 
@@ -66,18 +66,12 @@ project-root/
    cd create-postgres
    ```
 
-2. Set up environment variables:
-   Create a `.env` file in the project root and add:
-
-   ```
-   POSTGRES_PASSWORD=your_secure_password
-   RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
-   RECAPTCHA_SITE_KEY=your_recaptcha_site_key
-   ```
+2. Copy `env.example` to `.env` and add your own values.
 
 3. Build and start the containers:
 
    ```
+   cp docker-compose.override.yml.example docker-compose.override.ym
    docker-compose up --build
    ```
 
@@ -93,27 +87,6 @@ project-root/
    npm install
    npm link
    ```
-
-## Production Deployment
-
-1. Set up a production server with Docker and Docker Compose installed.
-2. Clone the repository on the server.
-3. Set up environment variables as in the development setup, but use production-ready values. Ensure the `RECAPTCHA_SITE_KEY` is set to your production reCAPTCHA site key.
-4. Update `docker-compose.yml`:
-
-   - Remove port mappings for PostgreSQL
-   - Add proper SSL termination for frontend and backend
-   - Set up volume mounts for persistent data
-
-5. Build and start the containers:
-
-   ```
-   docker-compose up -d --build
-   ```
-
-6. Set up monitoring and logging solutions (e.g., Prometheus, Grafana, ELK stack).
-
-7. Implement a backup strategy for the PostgreSQL data.
 
 ## CLI Tool Usage
 
@@ -180,22 +153,6 @@ These measures ensure strong isolation between user databases and prevent unauth
 - Users can check their current database size through the API.
 
 Please note that exceeding the size limit will prevent further data insertion or updates. Users should monitor their database size and manage their data accordingly.
-
-## Abuse Prevention
-
-This service implements several measures to prevent abuse:
-
-- Rate limiting on database creation
-- Resource quotas for each database
-- 24-hour lifetime limit for databases
-- Query monitoring and restrictions:
-  - All queries are logged and analyzed for suspicious patterns
-  - Users are restricted from performing certain operations (e.g., creating new tables)
-  - Alerts are generated for potentially abusive query patterns
-- Advanced reCAPTCHA implementation
-- Clear Terms of Service
-
-Users found to be violating our ToS or attempting to abuse the service will be banned.
 
 ## License
 

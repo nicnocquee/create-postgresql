@@ -8,7 +8,7 @@ source /etc/environment
 echo "POSTGRES_PASSWORD is set: ${POSTGRES_PASSWORD:+yes}"
 
 # First, get the list of databases to drop
-DATABASES_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -t -c "SELECT datname FROM pg_database WHERE datname LIKE 'db_%'")
+DATABASES_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -t -c "SELECT datname FROM pg_database WHERE datname LIKE 'db_%'")
 
 # Then, get the list of users to drop
 USERS_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -t -c "SELECT rolname FROM pg_roles WHERE rolname LIKE 'user_db_%'")

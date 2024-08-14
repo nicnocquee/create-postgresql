@@ -5,12 +5,13 @@ services:
     image: postgres:15
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-script.sql:/docker-entrypoint-initdb.d/10-init-script.sql
       - ./postgres/admin-tasks.sql:/docker-entrypoint-initdb.d/20-admin-tasks.sql
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '${BACKEND_PUBLIC_DB_PORT:-5432}:${POSTGRES_PORT:-5432}' # Default to 5432 if BACKEND_PUBLIC_DB_PORT is not set. Needed this to avoid potential conflict with other Postgres instances running on the same host.
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
@@ -22,13 +23,11 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PASSWORD:-5432}/postgres
-      DB_HOST: ${DB_HOST:-localhost}
-      DB_PORT: ${POSTGRES_PORT:-5432}
-      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-    ports:
-      - '3000:3000'
+      POSTGRES_INTERNAL_DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/postgres
+      BACKEND_PUBLIC_DB_HOST: ${BACKEND_PUBLIC_DB_HOST:-localhost}
+      BACKEND_PUBLIC_DB_PORT: ${BACKEND_PUBLIC_DB_PORT:-5432}
+      BACKEND_RECAPTCHA_SECRET_KEY: ${BACKEND_RECAPTCHA_SECRET_KEY}
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,11 +39,9 @@ services:
 
   frontend:
     build: ./frontend
-    # ports:
-    #   - '80:80'
     environment:
-      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY}
-      API_URL: ${API_URL}
+      FRONTEND_RECAPTCHA_SITE_KEY: ${FRONTEND_RECAPTCHA_SITE_KEY}
+      CLI_API_URL: ${CLI_API_URL}
     depends_on:
       - backend
     healthcheck:
@@ -56,7 +53,9 @@ services:
   cron:
     build: ./cron
     environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
     depends_on:
       postgres:

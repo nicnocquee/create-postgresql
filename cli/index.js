@@ -10,35 +10,35 @@ const { argv } = yargs(hideBin(process.argv))
     alias: 'a',
     type: 'string',
     description: 'Backend API URL',
-    default: '{{API_URL}}',
+    default: '{{CLI_API_URL}}',
   })
   .option('frontend-url', {
     alias: 'f',
     type: 'string',
     description: 'Frontend URL',
-    default: '{{FRONTEND_URL}}',
+    default: '{{CLI_FRONTEND_URL}}',
   })
   .option('poll-interval', {
     alias: 'p',
     type: 'number',
     description: 'Polling interval in milliseconds',
-    default: () => parseInt('{{POLL_INTERVAL}}', 10) || 2000,
+    default: () => parseInt('{{CLI_POLL_INTERVAL}}', 10) || 2000,
   })
   .option('max-attempts', {
     alias: 'm',
     type: 'number',
     description: 'Maximum poll attempts',
-    default: () => parseInt('{{MAX_POLL_ATTEMPTS}}', 10) || 30,
+    default: () => parseInt('{{CLI_MAX_POLL_ATTEMPTS}}', 10) || 30,
   });
 
-const API_URL = argv.apiUrl;
-const FRONTEND_URL = argv.frontendUrl;
-const POLL_INTERVAL = argv.pollInterval;
-const MAX_POLL_ATTEMPTS = argv.maxAttempts;
+const CLI_API_URL = argv.apiUrl;
+const CLI_FRONTEND_URL = argv.frontendUrl;
+const CLI_POLL_INTERVAL = argv.pollInterval;
+const CLI_MAX_POLL_ATTEMPTS = argv.maxAttempts;
 
 async function checkVerificationStatus(sessionId) {
   try {
-    const response = await axios.get(`${API_URL}/verify-status?session=${sessionId}`);
+    const response = await axios.get(`${CLI_API_URL}/verify-status?session=${sessionId}`);
     return response.data.verified;
   } catch (error) {
     console.error('Error checking verification status:', error.message);
@@ -50,14 +50,14 @@ async function waitForVerification(sessionId) {
   let attempts = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    if (attempts >= MAX_POLL_ATTEMPTS) {
+    if (attempts >= CLI_MAX_POLL_ATTEMPTS) {
       return false;
     }
     const isVerified = await checkVerificationStatus(sessionId);
     if (isVerified) {
       return true;
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
+    await new Promise((resolve) => setTimeout(resolve, CLI_POLL_INTERVAL));
     attempts += 1;
   }
 }
@@ -66,7 +66,7 @@ async function main() {
   console.log('Welcome to create-postgres CLI!');
 
   const sessionId = Math.random().toString(36).substring(7);
-  const verificationUrl = `${FRONTEND_URL}/verify?session=${sessionId}`;
+  const verificationUrl = `${CLI_FRONTEND_URL}/verify?session=${sessionId}`;
   console.log(`Please open this URL in your browser to verify:\n${verificationUrl}`);
   await open(verificationUrl);
 
@@ -80,7 +80,7 @@ async function main() {
 
   console.log('Verification successful! Creating database...');
   try {
-    const response = await axios.post(`${API_URL}/create-database`, { sessionId });
+    const response = await axios.post(`${CLI_API_URL}/create-database`, { sessionId });
     const { dbName, username, password, url, resetTime } = response.data;
 
     console.log('\nYour database has been created!');

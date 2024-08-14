@@ -13,6 +13,4 @@ RUN npm install
 # Copy the backend code
 COPY backend ./backend
 
-EXPOSE 3000
-
 CMD ["node", "backend/server.js"]

@@ -1,6 +1,6 @@
 {
   "name": "create-postgresql",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A command-line interface (CLI) tool to quickly create a temporary PostgreSQL database for development purposes.",
   "repository": {
     "type": "git",
