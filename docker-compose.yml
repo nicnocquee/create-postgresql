@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   init:
     build:
@@ -36,7 +34,7 @@ services:
 
   pgbouncer-create-postgresql:
     image: edoburu/pgbouncer:latest
-    container_name: pgbouncer
+    container_name: pgbouncer-create-postgresql
     environment:
       - DB_HOST=${POSTGRES_HOST:-postgres}
       - DB_PORT=${POSTGRES_PORT:-5432}

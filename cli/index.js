@@ -4,6 +4,7 @@ const axios = require('axios');
 const open = require('open');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const { Pool } = require('pg');
 
 const { argv } = yargs(hideBin(process.argv))
   .option('api-url', {
@@ -62,8 +63,45 @@ async function waitForVerification(sessionId) {
   }
 }
 
+async function testDatabase(connectionUrl, connectionType) {
+  const pool = new Pool({ connectionString: connectionUrl });
+  const timestamp = Date.now();
+  const tableName = `test_${timestamp}`;
+
+  try {
+    console.log(`\nTesting ${connectionType} connection:`);
+
+    // Create table
+    await pool.query(`
+      CREATE TABLE ${tableName} (
+        id SERIAL PRIMARY KEY,
+        createdAt TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log(`- Created table ${tableName}`);
+
+    // Insert a row
+    const insertResult = await pool.query(`INSERT INTO ${tableName} DEFAULT VALUES RETURNING *`);
+    console.log(`- Inserted row:`, insertResult.rows[0]);
+
+    // Select the inserted row
+    const selectResult = await pool.query(`SELECT * FROM ${tableName}`);
+    console.log(`- Selected row:`, selectResult.rows[0]);
+
+    // Delete the table
+    await pool.query(`DROP TABLE ${tableName}`);
+    console.log(`- Deleted table ${tableName}`);
+
+    console.log(`${connectionType} connection test completed successfully.`);
+  } catch (error) {
+    console.error(`Error testing ${connectionType} connection:`, error.message);
+  } finally {
+    await pool.end();
+  }
+}
+
 async function main() {
-  console.log('Welcome to create-postgres CLI!');
+  console.log('Welcome to create-postgresql CLI!');
 
   const sessionId = Math.random().toString(36).substring(7);
   const verificationUrl = `${CLI_FRONTEND_URL}/verify?session=${sessionId}`;
@@ -91,6 +129,14 @@ async function main() {
     console.log(`Direct Connection URL: ${directConnectionUrl}`);
     console.log(`Pooled Connection URL: ${pooledConnectionUrl}`);
     console.log(`\nThis database will be reset at ${resetTime}`);
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Test direct connection
+    await testDatabase(directConnectionUrl, 'Direct');
+
+    // Test pooled connection
+    await testDatabase(pooledConnectionUrl, 'Pooled');
   } catch (error) {
     console.error('Failed to create database:', error.response?.data || error.message);
   }
