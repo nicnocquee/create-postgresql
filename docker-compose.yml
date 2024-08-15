@@ -131,6 +131,7 @@ services:
       pgbouncer-create-postgresql:
         condition: service_healthy
     volumes:
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
       - ./cron/logs:/var/log
       - pgbouncer_users:/etc/pgbouncer
       - /var/run/docker.sock:/var/run/docker.sock # To allow docker exec commands

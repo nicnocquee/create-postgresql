@@ -7,7 +7,7 @@
     "format-check": "prettier --check '**/*.{js,jsx,json,md}'",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write '**/*.{js,jsx,json,md}'",
-    "cli": "cd cli && npm run build && node index.prod.js",
+    "cli": "cp .env cli/.env && cd cli && npm run build && node index.prod.js",
     "cli:link": "cd cli && npm link"
   },
   "dependencies": {

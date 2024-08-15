@@ -1,5 +1,10 @@
 #!/bin/bash
 
+find_pgbouncer_container() {
+    docker ps --format '{{.Names}}' | grep -i pgbouncer-create-postgresql | head -n 1
+}
+
+
 echo "Starting cleanup script at $(date)"
 
 # Source the environment variables
@@ -11,10 +16,10 @@ echo "POSTGRES_PASSWORD is set: ${POSTGRES_PASSWORD:+yes}"
 DATABASES_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -t -c "SELECT datname FROM pg_database WHERE datname LIKE 'db_%'")
 
 # Then, get the list of users to drop
-USERS_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -t -c "SELECT rolname FROM pg_roles WHERE rolname LIKE 'user_db_%'")
+USERS_TO_DROP=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -t -c "SELECT rolname FROM pg_roles WHERE rolname LIKE 'user_db_%'")
 
 # Disconnect all other connections
-PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres << EOF
+PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres << EOF
 DO \$\$
 DECLARE
     db_name TEXT;
@@ -33,24 +38,33 @@ EOF
 for DB in $DATABASES_TO_DROP
 do
     echo "Dropping database: $DB"
-    PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"$DB\""
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"$DB\""
 done
 
 # Drop each user and remove from PgBouncer
 for USER in $USERS_TO_DROP
 do
     echo "Dropping user: $USER"
-    PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -c "DROP USER IF EXISTS \"$USER\""
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -c "DROP USER IF EXISTS \"$USER\""
     
     # Remove user from PgBouncer userlist
-    sed -i "/^\"$USER\"/d" /etc/pgbouncer/userlist.txt
+    cat <(sed "/^\"$USER\"/d" /etc/pgbouncer/userlist.txt) > /etc/pgbouncer/userlist.txt
 done
 
 # Signal PgBouncer to reload its configuration
-docker exec pgbouncer pkill -HUP pgbouncer
+PGBOUNCER_CONTAINER=$(find_pgbouncer_container)
+if [ -n "$PGBOUNCER_CONTAINER" ]; then
+    if docker exec "$PGBOUNCER_CONTAINER" pkill -HUP pgbouncer; then
+        echo "PgBouncer reloaded successfully at $(date)"
+    else
+        echo "Failed to reload PgBouncer at $(date)"
+    fi
+else
+    echo "PgBouncer container not found at $(date)"
+fi
 
 # List remaining databases (for verification)
 echo "Remaining databases:"
-PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -c "SELECT datname FROM pg_database WHERE datname LIKE 'db_%'"
+PGPASSWORD=$POSTGRES_PASSWORD psql -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U postgres -d postgres -c "SELECT datname FROM pg_database WHERE datname LIKE 'db_%'"
 
 echo "Database cleanup completed at $(date)"
