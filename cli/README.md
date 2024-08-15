@@ -70,8 +70,8 @@ To set up the project for development:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/create-postgres.git
-   cd create-postgres
+   git clone https://github.com/nicnocquee/create-postgresql.git
+   cd create-postgresql
    ```
 
 2. Install dependencies:

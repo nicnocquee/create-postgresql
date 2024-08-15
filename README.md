@@ -63,8 +63,8 @@ project-root/
 1. Clone the repository:
 
    ```
-   git clone https://github.com/nicnocquee/create-postgres.git
-   cd create-postgres
+   git clone https://github.com/nicnocquee/create-postgresql.git
+   cd create-postgresql
    ```
 
 2. Copy `env.example` to `.env` and add your own values.
