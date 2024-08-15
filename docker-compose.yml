@@ -37,6 +37,7 @@ services:
     environment:
       - DB_HOST=${POSTGRES_HOST:-postgres}
       - DB_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POOL_MODE=transaction
       - MAX_CLIENT_CONN=${PGBOUNCER_MAX_CLIENT_CONN:-1000}
       - DEFAULT_POOL_SIZE=${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
@@ -51,6 +52,13 @@ services:
     depends_on:
       - init
       - postgres
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -h 127.0.0.1 -p 6432 -U $$POSTGRES_USER'
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pgbouncer_updater:
     build:
@@ -62,6 +70,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - pgbouncer
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f update_pgbouncer.sh || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   backend:
     build:
@@ -81,6 +94,11 @@ services:
         condition: service_healthy
       pgbouncer:
         condition: service_started
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -89,6 +107,11 @@ services:
       CLI_API_URL: ${CLI_API_URL}
     depends_on:
       - backend
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   cron:
     build: ./cron
@@ -107,6 +130,11 @@ services:
       - pgbouncer_users:/etc/pgbouncer
       - /var/run/docker.sock:/var/run/docker.sock # To allow docker exec commands
     privileged: true # This allows the container to run Docker commands
+    healthcheck:
+      test: ['CMD-SHELL', "pgrep cron || (echo 'Cron not running' && exit 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
