@@ -48,6 +48,7 @@ project-root/
 │   └── index.html
 ├── postgres/
 │   └── init-script.sql
+|   └── admin-tasks.sql
 ├── cron/
 │   ├── Dockerfile
 │   ├── crontab

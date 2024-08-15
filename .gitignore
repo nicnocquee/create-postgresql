@@ -6,4 +6,5 @@ pgdata
 cli/index.prod.js
 cron/logs
 .npmrc
-docker-compose.override.yml 
+docker-compose.override.yml
+pgbouncer/userlist.txt

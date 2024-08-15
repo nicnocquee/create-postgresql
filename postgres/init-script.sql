@@ -1,7 +1,9 @@
+-- Set password encryption method
+ALTER SYSTEM SET password_encryption = 'scram-sha-256';
+SELECT pg_reload_conf();
+
 -- Create the extension if it doesn't exist
 CREATE EXTENSION IF NOT EXISTS dblink;
-
-ALTER USER postgres WITH SUPERUSER;
 
 -- Create a table to store query logs
 CREATE TABLE IF NOT EXISTS query_logs (

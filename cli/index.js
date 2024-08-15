@@ -81,13 +81,15 @@ async function main() {
   console.log('Verification successful! Creating database...');
   try {
     const response = await axios.post(`${CLI_API_URL}/create-database`, { sessionId });
-    const { dbName, username, password, url, resetTime } = response.data;
+    const { dbName, username, password, directConnectionUrl, pooledConnectionUrl, resetTime } =
+      response.data;
 
     console.log('\nYour database has been created!');
     console.log(`Database Name: ${dbName}`);
     console.log(`Username: ${username}`);
     console.log(`Password: ${password}`);
-    console.log(`URL: ${url}`);
+    console.log(`Direct Connection URL: ${directConnectionUrl}`);
+    console.log(`Pooled Connection URL: ${pooledConnectionUrl}`);
     console.log(`\nThis database will be reset at ${resetTime}`);
   } catch (error) {
     console.error('Failed to create database:', error.response?.data || error.message);

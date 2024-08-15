@@ -66,7 +66,8 @@ app.post('/create-database', createDbLimiter, async (req, res) => {
   }
 
   try {
-    const { dbName, username, password, connectionUrl } = await createDatabase();
+    const { dbName, username, password, directConnectionUrl, pooledConnectionUrl } =
+      await createDatabase();
 
     verifiedSessions.delete(sessionId);
 
@@ -74,7 +75,8 @@ app.post('/create-database', createDbLimiter, async (req, res) => {
       dbName,
       username,
       password,
-      url: connectionUrl,
+      directConnectionUrl,
+      pooledConnectionUrl,
       resetTime: '00:00 UTC',
     });
   } catch (error) {

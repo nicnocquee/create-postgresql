@@ -1,5 +1,6 @@
 const { Pool, Client } = require('pg');
 const crypto = require('crypto');
+const fs = require('fs').promises;
 
 const pools = {};
 
@@ -161,29 +162,38 @@ async function createDatabase() {
 
     await newDbClient.query('COMMIT');
 
+    const passwordQuery = await newDbClient.query(
+      `SELECT rolpassword FROM pg_authid WHERE rolname = $1`,
+      [username]
+    );
+    const scramPassword = passwordQuery.rows[0].rolpassword;
+
+    console.log('Retrieved SCRAM password from PostgreSQL:', scramPassword);
+
+    // Add user to PgBouncer auth file
+    await fs.appendFile('/var/lib/pgbouncer/new_users.txt', `"${username}" "${scramPassword}"\n`, {
+      flag: 'a',
+    });
+    console.log(`Added user ${username} to PgBouncer new_users.txt`);
+
     // Now set up the database
     await setupDatabase(dbName, username);
 
     const encodedPassword = encodeURIComponent(password);
-    const connectionUrl = `postgres://${username}:${encodedPassword}@${
+    const directConnectionUrl = `postgres://${username}:${encodedPassword}@${
       process.env.BACKEND_PUBLIC_DB_HOST || 'localhost'
     }:${process.env.BACKEND_PUBLIC_DB_PORT || '5432'}/${dbName}`;
 
-    return { dbName, username, password, connectionUrl };
+    const pooledConnectionUrl = `postgres://${username}:${encodedPassword}@${
+      process.env.PGBOUNCER_HOST || 'localhost'
+    }:${process.env.PGBOUNCER_PORT || '6432'}/${dbName}`;
+
+    return { dbName, username, password, directConnectionUrl, pooledConnectionUrl };
   } catch (error) {
     console.error('Error in createDatabase:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', error.detail);
-
-    if (newDbClient) {
-      await newDbClient.query('ROLLBACK');
-    }
-
     throw error;
   } finally {
-    if (newDbClient) {
-      await newDbClient.end();
-    }
+    await newDbClient.end();
   }
 }
 

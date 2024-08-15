@@ -36,12 +36,18 @@ do
     PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"$DB\""
 done
 
-# Drop each user
+# Drop each user and remove from PgBouncer
 for USER in $USERS_TO_DROP
 do
     echo "Dropping user: $USER"
     PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -d postgres -c "DROP USER IF EXISTS \"$USER\""
+    
+    # Remove user from PgBouncer userlist
+    sed -i "/^\"$USER\"/d" /etc/pgbouncer/userlist.txt
 done
+
+# Signal PgBouncer to reload its configuration
+docker exec pgbouncer pkill -HUP pgbouncer
 
 # List remaining databases (for verification)
 echo "Remaining databases:"

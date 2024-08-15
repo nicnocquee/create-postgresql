@@ -1,22 +1,67 @@
 version: '3.8'
 
 services:
+  init:
+    build:
+      context: .
+      dockerfile: Dockerfile.init
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./pgbouncer:/pgbouncer
+      - ./postgres:/postgres
   postgres:
     image: postgres:15
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-script.sql:/docker-entrypoint-initdb.d/10-init-script.sql
       - ./postgres/admin-tasks.sql:/docker-entrypoint-initdb.d/20-admin-tasks.sql
     ports:
-      - '${BACKEND_PUBLIC_DB_PORT:-5432}:${POSTGRES_PORT:-5432}' # Default to 5432 if BACKEND_PUBLIC_DB_PORT is not set. Needed this to avoid potential conflict with other Postgres instances running on the same host.
+      - '${BACKEND_PUBLIC_DB_PORT:-5432}:${POSTGRES_PORT:-5432}'
+    depends_on:
+      - init
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
+    environment:
+      - DB_HOST=${POSTGRES_HOST:-postgres}
+      - DB_PORT=${POSTGRES_PORT:-5432}
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=${PGBOUNCER_MAX_CLIENT_CONN:-1000}
+      - DEFAULT_POOL_SIZE=${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      - AUTH_TYPE=scram-sha-256
+      - AUTH_FILE=/etc/pgbouncer/userlist.txt
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+      - pgbouncer_users:/var/lib/pgbouncer
+    ports:
+      - '${BACKEND_PUBLIC_PGBOUNCER_PORT:-6432}:6432'
+    depends_on:
+      - init
+      - postgres
+
+  pgbouncer_updater:
+    build:
+      context: ./pgbouncer_updater
+      dockerfile: Dockerfile
+    volumes:
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+      - pgbouncer_users:/var/lib/pgbouncer
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - pgbouncer
 
   backend:
     build:
@@ -27,15 +72,15 @@ services:
       BACKEND_PUBLIC_DB_HOST: ${BACKEND_PUBLIC_DB_HOST:-localhost}
       BACKEND_PUBLIC_DB_PORT: ${BACKEND_PUBLIC_DB_PORT:-5432}
       BACKEND_RECAPTCHA_SECRET_KEY: ${BACKEND_RECAPTCHA_SECRET_KEY}
-
+      PGBOUNCER_HOST: pgbouncer
+      PGBOUNCER_PORT: 6432
+    volumes:
+      - pgbouncer_users:/var/lib/pgbouncer
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      pgbouncer:
+        condition: service_started
 
   frontend:
     build: ./frontend
@@ -44,11 +89,6 @@ services:
       CLI_API_URL: ${CLI_API_URL}
     depends_on:
       - backend
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:80']
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   cron:
     build: ./cron
@@ -56,17 +96,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432} # Default to 5432 if POSTGRES_PORT is not set. Needed this to avoid potential conflict with other Postgres instances running on the same host.
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
     volumes:
       - ./cron/logs:/var/log
-    healthcheck:
-      test: ['CMD-SHELL', "pgrep cron || (echo 'Cron not running' && exit 1)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - pgbouncer_users:/etc/pgbouncer
+      - /var/run/docker.sock:/var/run/docker.sock # To allow docker exec commands
+    privileged: true # This allows the container to run Docker commands
 
 volumes:
   postgres_data:
+  pgbouncer_users:
