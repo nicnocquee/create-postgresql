@@ -34,7 +34,7 @@ services:
       timeout: 5s
       retries: 5
 
-  pgbouncer:
+  pgbouncer-create-postgresql:
     image: edoburu/pgbouncer:latest
     container_name: pgbouncer
     environment:
@@ -65,18 +65,19 @@ services:
       timeout: 5s
       retries: 5
 
-  pgbouncer_updater:
+  pgbouncer-updater:
     build:
-      context: ./pgbouncer_updater
+      context: ./pgbouncer-updater
       dockerfile: Dockerfile
     volumes:
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
       - pgbouncer_users:/var/lib/pgbouncer
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - pgbouncer
+      pgbouncer-create-postgresql:
+        condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'pgrep -f update_pgbouncer.sh || exit 1']
+      test: ['CMD-SHELL', 'pgrep -f update-pgbouncer.sh || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -97,8 +98,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      pgbouncer:
-        condition: service_started
+      pgbouncer-create-postgresql:
+        condition: service_healthy
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1']
       interval: 10s
@@ -111,7 +112,8 @@ services:
       FRONTEND_RECAPTCHA_SITE_KEY: ${FRONTEND_RECAPTCHA_SITE_KEY}
       CLI_API_URL: ${CLI_API_URL}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost || exit 1']
       interval: 10s
@@ -128,8 +130,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      pgbouncer:
-        condition: service_started
+      pgbouncer-create-postgresql:
+        condition: service_healthy
     volumes:
       - ./cron/logs:/var/log
       - pgbouncer_users:/etc/pgbouncer

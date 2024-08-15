@@ -4,10 +4,10 @@ RUN apk add --no-cache bash sed openssl
 
 WORKDIR /app
 
-COPY generate_userlist.sh /app/generate_userlist.sh
-RUN chmod +x /app/generate_userlist.sh
+COPY generate-userlist.sh /app/generate-userlist.sh
+RUN chmod +x /app/generate-userlist.sh
 
 # Create necessary directories
 RUN mkdir -p /pgbouncer /postgres
 
-CMD ["/bin/bash", "-c", "/app/generate_userlist.sh"]
+CMD ["/bin/bash", "-c", "/app/generate-userlist.sh"]
