@@ -1,6 +1,6 @@
 {
   "name": "create-postgresql",
-  "version": "1.0.7",
+  "version": "1.0.0",
   "description": "A command-line interface (CLI) tool to quickly create a temporary PostgreSQL database for development purposes.",
   "repository": {
     "type": "git",
@@ -24,7 +24,8 @@
     "prepublish": "npm run build",
     "build": "node ./build-script.js",
     "version-bump": "node version-bump.js",
-    "publish-cli": "npm run version-bump & npm run build && npm publish && git reset --hard HEAD"
+    "copy-env": "cp ../.env .env",
+    "publish-cli": "npm run version-bump & npm run copy-env && npm run build && npm publish && git reset --hard HEAD"
   },
   "dependencies": {
     "axios": "^0.21.1",

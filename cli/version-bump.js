@@ -8,7 +8,7 @@ const packageJson = require(packageJsonPath);
 
 // Bump the patch version
 const versionParts = packageJson.version.split('.');
-versionParts[2] = parseInt(versionParts[2], 10) + 1;
+versionParts[2] = new Date().getTime();
 packageJson.version = versionParts.join('.');
 
 // Write the updated package.json

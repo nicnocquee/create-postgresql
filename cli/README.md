@@ -61,7 +61,7 @@ create-postgresql --api-url https://api.example.com --frontend-url https://app.e
 2. It opens a verification URL in your default browser.
 3. The CLI waits for you to complete the verification process. This is needed to prevent abuse.
 4. Once verified, it creates a temporary PostgreSQL database.
-5. Finally, it displays the database credentials and connection information.
+5. Finally, it displays the database credentials and connection information for both the direct and pooled connections.
 
 ## Development
 
