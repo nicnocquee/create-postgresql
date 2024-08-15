@@ -185,8 +185,8 @@ async function createDatabase() {
     }:${process.env.BACKEND_PUBLIC_DB_PORT || '5432'}/${dbName}`;
 
     const pooledConnectionUrl = `postgres://${username}:${encodedPassword}@${
-      process.env.PGBOUNCER_HOST || 'localhost'
-    }:${process.env.PGBOUNCER_PORT || '6432'}/${dbName}`;
+      process.env.BACKEND_PUBLIC_PGBOUNCER_HOST || 'localhost'
+    }:${process.env.BACKEND_PUBLIC_PGBOUNCER_PORT || '6432'}/${dbName}`;
 
     return { dbName, username, password, directConnectionUrl, pooledConnectionUrl };
   } catch (error) {
