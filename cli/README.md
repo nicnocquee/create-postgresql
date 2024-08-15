@@ -1,20 +1,8 @@
-# create-postgresql (BETA)
+# create-postgresql
 
-A command-line interface (CLI) tool to quickly create a temporary PostgreSQL database for development purposes. The PostgreSQL instance is running in my own server in Hetzner. The database is store automatically deleted after 24 hours.
+A command-line interface (CLI) tool to quickly create a temporary PostgreSQL database for development purposes. The PostgreSQL instance is running in my own server in Hetzner. The database is store automatically deleted every day at midnight UTC.
 
 You can host the backend yourself if you want. The backend source code is available at [create-postgresql](https://github.com/nicnocquee/create-postgresql).
-
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Options](#options)
-- [How It Works](#how-it-works)
-- [Development](#development)
-- [Dependencies](#dependencies)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Quick Start
 
@@ -60,8 +48,8 @@ create-postgresql --api-url https://api.example.com --frontend-url https://app.e
 1. When you run the command, it generates a unique session ID.
 2. It opens a verification URL in your default browser.
 3. The CLI waits for you to complete the verification process. This is needed to prevent abuse.
-4. Once verified, it creates a temporary PostgreSQL database.
-5. Finally, it displays the database credentials and connection information for both the direct and pooled connections.
+4. Once verified, the CLI continue its work to create a temporary PostgreSQL database.
+5. Finally, it displays the database credentials and connection information for both the direct and pooled connections. It also runs a quick check to ensure the database is working.
 
 ## Development
 
