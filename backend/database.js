@@ -168,8 +168,6 @@ async function createDatabase() {
     );
     const scramPassword = passwordQuery.rows[0].rolpassword;
 
-    console.log('Retrieved SCRAM password from PostgreSQL:', scramPassword);
-
     // Add user to PgBouncer auth file
     await fs.appendFile('/var/lib/pgbouncer/new_users.txt', `"${username}" "${scramPassword}"\n`, {
       flag: 'a',
