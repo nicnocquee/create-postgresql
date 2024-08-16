@@ -1,8 +1,8 @@
-const { Pool, Client } = require('pg');
-const crypto = require('crypto');
+const { Client } = require('pg');
 const fs = require('fs').promises;
+const crypto = require('crypto');
 
-const pools = {};
+const timescaledb = require('./timescaledb');
 
 function generatePassword(length = 16) {
   const charset =
@@ -16,19 +16,6 @@ function generatePassword(length = 16) {
   return password;
 }
 
-async function getPool(dbName, username, password) {
-  if (!pools[dbName]) {
-    const connectionString = `${process.env.POSTGRES_INTERNAL_DATABASE_URL.split('/')
-      .slice(0, -1)
-      .join('/')}/${dbName}`;
-    pools[dbName] = new Pool({
-      connectionString,
-      user: username,
-      password,
-    });
-  }
-  return pools[dbName];
-}
 async function setupDatabase(dbName, username) {
   const setupConnectionString = `${process.env.POSTGRES_INTERNAL_DATABASE_URL.split('/')
     .slice(0, -1)
@@ -186,6 +173,15 @@ async function createDatabase() {
       process.env.BACKEND_PUBLIC_PGBOUNCER_HOST || 'localhost'
     }:${process.env.BACKEND_PUBLIC_PGBOUNCER_PORT || '6432'}/${dbName}`;
 
+    try {
+      await timescaledb.query(
+        'INSERT INTO database_creation_logs (time, db_name) VALUES (NOW(), $1)',
+        [dbName]
+      );
+    } catch (error) {
+      console.error('Error in timescaledb.query:', error);
+    }
+
     return { dbName, username, password, directConnectionUrl, pooledConnectionUrl };
   } catch (error) {
     console.error('Error in createDatabase:', error);
@@ -195,25 +191,4 @@ async function createDatabase() {
   }
 }
 
-async function executeQuery(dbName, username, password, query, params = []) {
-  const pool = await getPool(dbName, username, password);
-  const client = await pool.connect();
-  try {
-    const result = await client.query(query, params);
-    return result;
-  } finally {
-    client.release();
-  }
-}
-
-async function getDatabaseSize(dbName, username, password) {
-  const result = await executeQuery(
-    dbName,
-    username,
-    password,
-    'SELECT pg_size_pretty(pg_database_size(current_database()))'
-  );
-  return result.rows[0].pg_size_pretty;
-}
-
-module.exports = { createDatabase, executeQuery, getDatabaseSize };
+module.exports = { createDatabase };

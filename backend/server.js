@@ -3,11 +3,17 @@ const axios = require('axios');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 
-const { createDatabase, getDatabaseSize } = require('./database');
+const { createDatabase } = require('./database');
+const { getDatabaseStats } = require('./stats');
 
 const createDbLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 1, // limit each IP to 1 request per windowMs
+});
+
+const administrationLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 request per windowMs
 });
 
 const app = express();
@@ -85,22 +91,18 @@ app.post('/create-database', createDbLimiter, async (req, res) => {
   }
 });
 
-app.get('/database-size', async (req, res) => {
-  const { dbName, username, password } = req.query;
+app.get('/database-stats', administrationLimiter, async (_req, res) => {
   try {
-    const size = await getDatabaseSize(dbName, username, password);
-    res.json({ size });
+    const stats = await getDatabaseStats();
+    res.json(stats);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get database size' });
+    console.error('Failed to get database stats:', error);
+    res.status(500).json({ error: 'Failed to get database stats' });
   }
 });
 
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
-});
-
-app.get('/health2', (req, res) => {
-  res.status(200).send('OK 2');
 });
 
 const PORT = process.env.PORT || 3000;
