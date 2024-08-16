@@ -12,6 +12,7 @@ The system consists of several components:
 - Frontend verification page: a single HTML page that uses Google reCAPTCHA to verify the user's identity.
 - Cron job for database cleanup.
 - [create-postgresql CLI to quickly generate a temporary database](https://www.npmjs.com/package/create-postgresql)
+- TimescaleDB database to track number of created databases over time.
 
 ## Prerequisites
 
